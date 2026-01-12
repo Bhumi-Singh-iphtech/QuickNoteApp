@@ -16,10 +16,10 @@ enum FolderCategory: String, CaseIterable {
 
     var iconAssetName: String {
         switch self {
-        case .personal: return "user"
+        case .personal: return "person"
         case .work: return "work_icon"
-        case .school: return "graduation-cap"
-        case .travel: return "luggage (2)"
+        case .school: return "graduation"
+        case .travel: return "travel."
         case .ideas: return "icon_music"
         case .finance: return "icon_finance"
         case .health: return "icon_health"

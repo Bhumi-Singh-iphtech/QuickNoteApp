@@ -1,6 +1,4 @@
 
-
-
 struct RecentNote {
     let date: String
     let category: String
