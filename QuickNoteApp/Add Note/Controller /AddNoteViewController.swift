@@ -19,12 +19,12 @@ class AddNoteViewController: UIViewController {
         AddNoteModel(title: "Scan note.", iconName: "scan_note.")
     ]
     @IBAction func backArrowTapped(_ sender: UIButton) {
-        // Switch to Home tab (index 0)
-        tabBarController?.selectedIndex = 0
-      
-        // Pop this view controller
+        if let tabBarController = tabBarController as? CustomTabBarController {
+            tabBarController.selectTab(index: 0) // Home
+        }
         navigationController?.popViewController(animated: true)
     }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: true)
@@ -36,10 +36,14 @@ class AddNoteViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if let tabBarController = self.tabBarController as? CustomTabBarController {
-            tabBarController.setCustomTabBar(hidden: false)
+
+        if isMovingFromParent {
+            (tabBarController as? CustomTabBarController)?.selectTab(index: 0)
         }
+
+        (tabBarController as? CustomTabBarController)?.setCustomTabBar(hidden: false)
     }
+
     override func viewDidLoad() {
         super.viewDidLoad()
     navigationController?.view.backgroundColor = UIColor(hex: "#232329")

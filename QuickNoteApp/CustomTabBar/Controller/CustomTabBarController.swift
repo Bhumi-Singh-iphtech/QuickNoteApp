@@ -14,7 +14,7 @@ class CustomTabBarController: UITabBarController {
         super.viewDidLoad()
         
         // CRITICAL: Set tab bar controller's view background
-        self.view.backgroundColor = .systemBackground
+        self.view.backgroundColor = UIColor(hex: "#2F2F34")
         
         // Hide system tab bar
         tabBar.isHidden = true
@@ -26,7 +26,7 @@ class CustomTabBarController: UITabBarController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // Ensure background is consistently set
-        self.view.backgroundColor = .systemBackground
+        self.view.backgroundColor = UIColor(hex: "#2F2F34")
     }
     
     override func viewDidLayoutSubviews() {
@@ -35,6 +35,14 @@ class CustomTabBarController: UITabBarController {
         view.bringSubviewToFront(customTabBar)
     }
     
+    // MARK: - Public Tab Selection API
+    func selectTab(index: Int) {
+        guard index >= 0, index < (viewControllers?.count ?? 0) else { return }
+
+        customTabBar.updateSelection(index: index)
+        selectedIndex = index
+    }
+
     // MARK: - Public Methods
     func setCustomTabBar(hidden: Bool) {
         customTabBar.isHidden = hidden
@@ -116,19 +124,21 @@ class CustomTabBarController: UITabBarController {
 
 // MARK: - CustomTabBarDelegate
 extension CustomTabBarController: CustomTabBarDelegate {
+    
     func didSelectTab(index: Int) {
-        // Update custom tab bar selection
-        customTabBar.updateSelection(index: index)
-        
-        // Smooth transition between tabs
-        UIView.transition(with: self.view,
-                         duration: 0.2,
-                         options: .transitionCrossDissolve,
-                         animations: {
-                             self.selectedIndex = index
-                         },
-                         completion: nil)
-    }
+           // Update custom tab bar selection
+           customTabBar.updateSelection(index: index)
+           
+           // Smooth transition between tabs
+           UIView.transition(with: self.view,
+                            duration: 0.2,
+                            options: .transitionCrossDissolve,
+                            animations: {
+                                self.selectedIndex = index
+                            },
+                            completion: nil)
+       }
+
 }
 
 // MARK: - UITabBarControllerDelegate for smooth transitions
