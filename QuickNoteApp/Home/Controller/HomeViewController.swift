@@ -79,16 +79,17 @@ class HomeViewController: UIViewController {
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
         alert.addAction(cancelAction)
 
-        // 🎨 Change Cancel button color
-        alert.view.tintColor = UIColor(hex: "#7B5CFF") // your custom color
+      
 
         present(alert, animated: true)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationController?.view.backgroundColor = .clear
+        navigationController?.setNavigationBarHidden(true, animated: false)
          setupCollectionView()
-
+       
         collectionView.backgroundColor = .clear
         recentNotesCollectionView.backgroundColor = .clear
     }
