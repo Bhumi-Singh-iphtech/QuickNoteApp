@@ -10,21 +10,25 @@ import UIKit
 class WelcomeViewController: UIViewController {
 
     @IBAction func letsStartTapped(_ sender: UIButton) {
-        navigateToHome()
+        navigateToSubscription()
     }
 
-    private func navigateToHome() {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let homeTabBar = storyboard.instantiateViewController(
-            withIdentifier: "CustomTabBarController"
-        ) as! CustomTabBarController
 
-        // Replace root view controller
+    private func navigateToSubscription() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let subscriptionVC = storyboard.instantiateViewController(
+            withIdentifier: "SubscriptionViewController"
+        )
+
+        subscriptionVC.modalPresentationStyle = .fullScreen
+
         if let sceneDelegate = UIApplication.shared.connectedScenes
             .first?.delegate as? SceneDelegate {
 
-            sceneDelegate.window?.rootViewController = homeTabBar
+            sceneDelegate.window?.rootViewController = subscriptionVC
             sceneDelegate.window?.makeKeyAndVisible()
         }
     }
-}
+
+    }
+
