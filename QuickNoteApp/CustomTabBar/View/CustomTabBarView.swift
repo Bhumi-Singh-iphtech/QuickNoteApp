@@ -51,15 +51,22 @@ class CustomTabBarView: UIView {
     private func setupTabs() {
         models.enumerated().forEach { index, model in
 
-            let iconView = UIImageView(image: UIImage(systemName: model.icon))
-            iconView.tintColor = .white
-            iconView.contentMode = .center
-            iconView.heightAnchor.constraint(equalToConstant: 40).isActive = true
+            let config = UIImage.SymbolConfiguration(pointSize: 21, weight: .bold)
+            let image = UIImage(systemName: model.icon, withConfiguration: config)
 
+            let iconView = UIImageView(image: image)
+            iconView.tintColor = UIColor(hex: "#A7A8A9")
+            iconView.contentMode = .center
+
+            iconView.translatesAutoresizingMaskIntoConstraints = false
+            iconView.heightAnchor.constraint(equalToConstant: 30).isActive = true
+            iconView.widthAnchor.constraint(equalToConstant: 30).isActive = true
+
+            
             let titleLabel = UILabel()
             titleLabel.text = model.title
             titleLabel.font = .systemFont(ofSize: 14)
-            titleLabel.textColor = .white
+            titleLabel.textColor = UIColor(hex: "#A7A8A9")
 
             let verticalStack = UIStackView(arrangedSubviews: [iconView, titleLabel])
             verticalStack.axis = .vertical
@@ -86,7 +93,7 @@ class CustomTabBarView: UIView {
         tabItems.enumerated().forEach { i, item in
             let color: UIColor = (i == index)
                 ? UIColor(hex: "#A6ABFF")   // selected color
-                : .white
+                : UIColor(hex: "#A7A8A9")
 
             (item.arrangedSubviews[0] as? UIImageView)?.tintColor = color
             (item.arrangedSubviews[1] as? UILabel)?.textColor = color
