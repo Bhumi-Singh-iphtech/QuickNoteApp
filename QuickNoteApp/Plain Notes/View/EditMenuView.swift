@@ -80,7 +80,7 @@ final class EditMenuView: UIView {
         stackView.axis = .horizontal
         stackView.spacing = 5
         stackView.alignment = .center
-        stackView.isUserInteractionEnabled = false // Important: allows button to receive taps
+        stackView.isUserInteractionEnabled = false
         
         // Create icon
         let iconImageView = UIImageView(image: UIImage(systemName: icon))
@@ -111,14 +111,14 @@ final class EditMenuView: UIView {
             stackView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -16)
         ])
         
-        // Ensure button has proper height
+      
         button.translatesAutoresizingMaskIntoConstraints = false
         button.heightAnchor.constraint(equalToConstant: 30).isActive = true
         
         // Add border/box around the button
         button.backgroundColor = UIColor(hex: "#242529")
    
-//        button.layer.borderWidth = 1
+
         button.layer.borderColor = UIColor(hex: "#3E3E44").cgColor
         button.layer.cornerRadius = 5
         button.addTarget(self, action: action, for: .touchUpInside)

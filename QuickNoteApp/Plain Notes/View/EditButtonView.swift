@@ -20,14 +20,14 @@ final class EditButtonView: UIView {
 
     override func awakeFromNib() {
         super.awakeFromNib()
-        setupView()
+//        setupView()
         applyFilledStyle()
     }
-
-    private func setupView() {
-        layer.cornerRadius = 5
-        layer.masksToBounds = true
-    }
+//
+//    private func setupView() {
+//        layer.cornerRadius = 5
+//        layer.masksToBounds = true
+//    }
 
     @IBAction func editButtonTapped(_ sender: UIButton) {
         delegate?.didTapEditButton()
