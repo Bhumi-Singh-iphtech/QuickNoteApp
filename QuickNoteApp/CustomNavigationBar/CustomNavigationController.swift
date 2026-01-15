@@ -10,7 +10,7 @@ import UIKit
 class CustomNavigationController: UINavigationController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.view.backgroundColor = .systemBackground // THIS FIXES THE WHITE FLASH!
+        self.view.backgroundColor = .systemBackground 
         
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
