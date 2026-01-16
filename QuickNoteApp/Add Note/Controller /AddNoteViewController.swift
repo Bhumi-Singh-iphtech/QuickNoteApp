@@ -9,7 +9,7 @@ import UIKit
 
 class AddNoteViewController: UIViewController {
     
-
+    
     @IBOutlet weak var collectionView: UICollectionView!
 
     private let options: [AddNoteModel] = [
@@ -32,6 +32,9 @@ class AddNoteViewController: UIViewController {
         if let tabBarController = self.tabBarController as? CustomTabBarController {
             tabBarController.setCustomTabBar(hidden: true)
         }
+        DispatchQueue.main.async {
+            self.view.window?.backgroundColor = UIColor.black
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -46,13 +49,13 @@ class AddNoteViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-    navigationController?.view.backgroundColor = UIColor(hex: "#232329")
-//        if let tabBarController = self.tabBarController as? CustomTabBarController {
-//            tabBarController.setCustomTabBar(hidden: true)
-//        }
-//        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.navigationBar.isTranslucent = true
+        view.backgroundColor = UIColor(hex: "#232329")
+        navigationController?.view.backgroundColor = UIColor(hex: "#232329")
+
         setupCollectionView()
     }
+
     private func openPlainNote() {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let vc = storyboard.instantiateViewController(
@@ -64,8 +67,18 @@ class AddNoteViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
-   
+    private func openVoiceNote() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(
+            withIdentifier: "VoiceNoteViewController"
+        ) as! VoiceNoteViewController
 
+
+
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    
 
 
     private func setupCollectionView() {
@@ -125,6 +138,9 @@ extension AddNoteViewController: UICollectionViewDelegate {
         switch selectedOption.title {
         case "Plain note":
             openPlainNote()
+        case "Voice note":
+            openVoiceNote()
+            
         default:
             break
         }
