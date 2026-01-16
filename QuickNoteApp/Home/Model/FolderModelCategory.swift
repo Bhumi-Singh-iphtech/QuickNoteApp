@@ -13,6 +13,7 @@ enum FolderCategory: String, CaseIterable {
     case ideas = "Music"
     case finance = "Finance"
     case health = "Health"
+    case other = "Other"
 
     var iconAssetName: String {
         switch self {
@@ -23,6 +24,7 @@ enum FolderCategory: String, CaseIterable {
         case .ideas: return "icon_music"
         case .finance: return "icon_finance"
         case .health: return "icon_health"
+        case .other: return "folder_icon"
         }
     }
 }
