@@ -4,7 +4,7 @@
 
 import UIKit
 
-final class PlainNoteViewController: UIViewController {
+final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelegate {
 
     // MARK: - Outlets
     @IBOutlet weak var editButtonView: EditButtonView!
@@ -12,17 +12,40 @@ final class PlainNoteViewController: UIViewController {
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var placeholderLabel: UILabel!
 
+    @IBOutlet weak var FontBarView: UIView!
     // MARK: - Properties
     private let editMenuView = EditMenuView()
-
+    private let customNavBar = CustomNavigationBar()
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        hideKeyboardWhenTappedAround()
         setupDate()
         setupEditMenu()
-
+        setupCustomNavBar() 
         editButtonView.delegate = self
+        
+    }
+    func hideKeyboardWhenTappedAround() {
+        let tap = UITapGestureRecognizer(
+            target: self,
+            action: #selector(dismissKeyboard)
+        )
+        tap.cancelsTouchesInView = false
+        tap.delegate = self
+        view.addGestureRecognizer(tap)
+    }
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        return true
+    }
+
+
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -60,11 +83,32 @@ final class PlainNoteViewController: UIViewController {
         NSLayoutConstraint.activate([
             editMenuView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 95),
             editMenuView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            editMenuView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -100),
+            editMenuView.bottomAnchor.constraint(equalTo: FontBarView.topAnchor, constant: -16),
             editMenuView.heightAnchor.constraint(equalToConstant: 150)
         ])
     }
+    @IBAction func shareButtonTapped(_ sender: UIButton) {
+        let bottomSheet = ShareMenuView()
+        bottomSheet.show(in: view)
+    }
+    private func setupCustomNavBar() {
+        customNavBar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(customNavBar)
 
+        NSLayoutConstraint.activate([
+            customNavBar.topAnchor.constraint(equalTo: view.topAnchor),
+            customNavBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            customNavBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            customNavBar.heightAnchor.constraint(equalToConstant: 110)
+        ])
+
+        customNavBar.setTitle("My Notes")
+
+        customNavBar.onBackTap = { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+        }
+    }
+    
     // MARK: - Actions
     @IBAction func closeTapped(_ sender: UIButton) {
         editMenuView.hide()
