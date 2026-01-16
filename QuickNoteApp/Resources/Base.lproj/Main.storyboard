@@ -593,7 +593,7 @@
                                                                     <rect key="frame" x="6" y="27" width="75" height="82"/>
                                                                     <subviews>
                                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person" highlighted="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XOQ-dw-VQP">
-                                                                            <rect key="frame" x="7.6666666666666643" y="5.6666666666666643" width="59.999999999999993" height="59.999999999999993"/>
+                                                                            <rect key="frame" x="7.6666666666666643" y="11" width="59.999999999999993" height="60"/>
                                                                             <color key="tintColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                                                             <constraints>
                                                                                 <constraint firstAttribute="width" constant="60" id="bUh-1G-9j7"/>
@@ -606,7 +606,7 @@
                                                                     <constraints>
                                                                         <constraint firstAttribute="height" constant="82" id="Ha3-pT-aG3"/>
                                                                         <constraint firstAttribute="width" constant="75" id="JmO-km-J4V"/>
-                                                                        <constraint firstItem="XOQ-dw-VQP" firstAttribute="centerY" secondItem="WqG-zn-0ur" secondAttribute="centerY" constant="-5.3333333333333428" id="rXQ-ss-GnG"/>
+                                                                        <constraint firstItem="XOQ-dw-VQP" firstAttribute="centerY" secondItem="WqG-zn-0ur" secondAttribute="centerY" id="rXQ-ss-GnG"/>
                                                                         <constraint firstItem="XOQ-dw-VQP" firstAttribute="centerX" secondItem="WqG-zn-0ur" secondAttribute="centerX" id="yvF-kS-4c0"/>
                                                                     </constraints>
                                                                     <userDefinedRuntimeAttributes>
