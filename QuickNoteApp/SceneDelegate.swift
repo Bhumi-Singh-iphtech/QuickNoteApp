@@ -13,16 +13,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-//        guard let windowScene = (scene as? UIWindowScene) else { return }
-//        let window = UIWindow(windowScene: windowScene)
-//        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-//        let tabBarController = storyboard.instantiateViewController(withIdentifier: "CustomTabBarController")
-//        
-//        window.rootViewController = tabBarController
-//        window.backgroundColor = UIColor(hex: "#232327") // dark bg color here
-//        tabBarController.view.backgroundColor = UIColor(hex: "#232327")
-//        window.makeKeyAndVisible()
-//        self.window = window
+
     }
 
 
