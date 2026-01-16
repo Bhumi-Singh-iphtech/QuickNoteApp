@@ -13,25 +13,25 @@ class CustomTabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // CRITICAL: Set tab bar controller's view background
+    
         self.view.backgroundColor = UIColor(hex: "#2F2F34")
         
         // Hide system tab bar
         tabBar.isHidden = true
         
         setupCustomTabBar()
-//        setupViewControllers()
+
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Ensure background is consistently set
+      
         self.view.backgroundColor = UIColor(hex: "#2F2F34")
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // Bring custom tab bar to front
+     
         view.bringSubviewToFront(customTabBar)
     }
     
@@ -64,59 +64,14 @@ class CustomTabBarController: UITabBarController {
         ])
     }
     
-//    private func setupViewControllers() {
-////        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-////        
-////        // Home Screen
-////        let homeVC = storyboard.instantiateViewController(
-////            withIdentifier: "HomeViewController"
-////        ) as! HomeViewController
-////        
-////        // Add Note Screen
-////        let addVC = storyboard.instantiateViewController(
-////            withIdentifier: "AddNoteViewController"
-////        ) as! AddNoteViewController
-////        
-//////        // Search Screen
-//////        let searchVC = storyboard.instantiateViewController(
-//////            withIdentifier: "SearchViewController"
-//////        ) as! SearchViewController
-//////        
-////        // Create navigation controllers with proper background
-////        let homeNav = createNavigationController(rootVC: homeVC)
-////        let addNav = createNavigationController(rootVC: addVC)
-//////        let searchNav = createNavigationController(rootVC: searchVC)
-////        
-////        // Hide system navigation bars
-////        homeNav.setNavigationBarHidden(true, animated: false)
-////        addNav.setNavigationBarHidden(true, animated: false)
-//////        searchNav.setNavigationBarHidden(true, animated: false)
-//////        
-//////        // Set view controllers
-//////        viewControllers = [homeNav, addNav, searchNav]
-//////        selectedIndex = 0
-//////        
-////        // IMPORTANT: Update custom tab bar selection to match
-//        customTabBar.updateSelection(index: 0)
-//        
-//        // Set delegate for smooth transitions
-////        delegate = self
-////    }
     
     private func createNavigationController(rootVC: UIViewController) -> UINavigationController {
         let navController = UINavigationController(rootViewController: rootVC)
         
-        // CRITICAL: Set navigation controller's background
+      
         navController.view.backgroundColor = .systemBackground
         
-        // Additional iOS 15+ fixes
-        if #available(iOS 15.0, *) {
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = .systemBackground
-            navController.navigationBar.standardAppearance = appearance
-            navController.navigationBar.scrollEdgeAppearance = appearance
-        }
+    
         
         return navController
     }
