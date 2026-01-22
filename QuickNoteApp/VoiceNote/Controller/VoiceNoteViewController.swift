@@ -10,20 +10,58 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var recordButton: UIButton!
     @IBOutlet weak var noteTitleTextField: UITextField!
 
-    @IBOutlet weak var categoryTextField: UITextField!
+
     // MARK: - Recording Properties
     private var audioRecorder: AVAudioRecorder?
     private var currentFileName: String = ""
     private var recordingTimer: Timer?
     private var waveformTimer: Timer?
-    
+    private var selectedCategory: String? = nil
     private var accumulatedTime: TimeInterval = 0
     private var sessionStartTime: Date?
     private var isRecordingSessionActive = false
     private var recordedLevels: [Float] = []
-    
+    private func loadVoiceNoteData() {
+           guard let note = currentVoiceNote else { return }
+           
+           // 1. Set Title
+           noteTitleTextField.text = note.title // assuming you used 'title' for name, or 'noteDescription'
+           // If your entity uses 'audioFileName' as the unique ID, keep track of it:
+           currentFileName = note.audioFileName ?? ""
+           
+           // 2. Set Category (for the Share Menu logic)
+           selectedCategory = note.title // Or note.category depending on your Entity
+           
+           // 3. Set Date
+           if let date = note.createdAt {
+               let formatter = DateFormatter()
+               formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
+               dateLabel.text = formatter.string(from: date)
+           }
+           
+           // 4. Set Duration
+           timerLabel.text = note.durationText ?? "00:00:00"
+           
+           // 5. Draw Waveform
+           if let data = note.waveformData,
+              let levels = try? JSONDecoder().decode([Float].self, from: data) {
+               
+               waveformView.reset()
+               // Assuming your WaveformView has a method to set all levels at once
+               // If not, you might need to loop: levels.forEach { waveformView.addLevel(CGFloat($0)) }
+               // But usually for static display:
+               for level in levels {
+                   waveformView.addLevel(CGFloat(level))
+               }
+           }
+           
+           // 6. Disable Record Button (Since we are viewing/editing, not recording new audio)
+           // You might want to change this button to a "Play" button in the future
+           recordButton.isEnabled = false
+           recordButton.alpha = 0.5
+       }
     private let customNavBar = CustomNavigationBar()
-
+    var currentVoiceNote: VoiceNoteEntity?
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,11 +71,11 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         setupRecordButtonGestures()
         requestMicrophonePermission()
         noteTitleTextField.delegate = self
-          categoryTextField.delegate = self // Your new category field
+     
           
-          // 2. Add Tap Gesture to dismiss keyboard when tapping the background
+          // Tap Gesture to dismiss keyboard when tapping the background
           let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-          // Important: This allows buttons (like record) to still work while keyboard is up
+          // This allows buttons (like record) to still work while keyboard is up
           tapGesture.cancelsTouchesInView = false
           view.addGestureRecognizer(tapGesture)
     }
@@ -51,7 +89,100 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
             tabBarController.setCustomTabBar(hidden: true)
         }
     }
-
+    // MARK: - Navigation Helper
+    private func navigateBack() {
+        // 1. Send signal to switch tab to Home
+        NotificationCenter.default.post(name: .navigateToHome, object: nil)
+        
+        // 2. Force close the screen
+        if let navigationController = self.navigationController {
+            // If pushed, pop immediately
+            navigationController.popToRootViewController(animated: false)
+        } else {
+            // If presented modally, dismiss
+            self.dismiss(animated: true, completion: nil)
+        }
+    }
+    @IBAction func shareButtonTapped(_ sender: UIButton) {
+        let bottomSheet = ShareMenuView(frame: self.view.bounds)
+  
+        // 1. Folders Setup (Same as before)
+        let defaultFolders = ["Personal", "Work", "School", "Travel"]
+        let savedFolderObjects = CoreDataManager.shared.fetchAllFolders()
+        let savedFolderNames = savedFolderObjects.compactMap { $0.title }
+        let uniqueSavedFolders = savedFolderNames.filter { !defaultFolders.contains($0) }
+        bottomSheet.existingFolders = defaultFolders + uniqueSavedFolders
+        
+        // Tell Menu if Existing
+        bottomSheet.isExistingNote = (self.currentVoiceNote != nil)
+        
+        // Callbacks
+        bottomSheet.onCreateNewFolder = { newName in
+            CoreDataManager.shared.createFolder(name: newName)
+        }
+        
+        bottomSheet.onMoveToFolder = { [weak self] folderName in
+            self?.selectedCategory = folderName
+            
+            // If existing, update immediately
+            if let existing = self?.currentVoiceNote {
+                existing.title = folderName // Assuming 'title' is used for Category in your Voice Entity
+                CoreDataManager.shared.saveContext()
+            }
+        }
+        
+        //  DELETE LOGIC
+        bottomSheet.onDeleteRequest = { [weak self] in
+            guard let self = self, let note = self.currentVoiceNote else { return }
+            
+            let alert = UIAlertController(title: "Delete", message: "Delete this recording?", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+                CoreDataManager.shared.deleteVoiceNote(note: note)
+                self.navigateBack()
+            }))
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            self.present(alert, animated: true)
+        }
+        
+        // Save Logic
+        bottomSheet.onSaveRequest = { [weak self] in
+            self?.showSaveConfirmationAlert()
+        }
+        
+        bottomSheet.show(in: view)
+    }
+    private func showSaveConfirmationAlert() {
+        print("Presenting Alert...") // Debug print
+        
+        let alert = UIAlertController(title: "Save Note", message: "Are you sure you want to save this note?", preferredStyle: .alert)
+        
+        // Save Action
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            self.saveNoteAndExit()
+        }
+        
+        // Cancel Action
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        
+        self.present(alert, animated: true)
+    }
+    private func saveNoteAndExit() {
+        // 1. Process the recording and save to Core Data
+        finalizeAndSaveRecording()
+        
+        // 2. Visual Feedback (optional but recommended since the screen stays open)
+        let alert = UIAlertController(title: "Saved", message: "Voice note saved successfully.", preferredStyle: .alert)
+        self.present(alert, animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            alert.dismiss(animated: true)
+        }
+        
+        // NAVIGATION REMOVED:
+        // The screen will now stay exactly where it is.
+    }
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         (tabBarController as? CustomTabBarController)?.setCustomTabBar(hidden: false)
@@ -66,19 +197,13 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         timerLabel.text = "00:00:00"
         timerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 28, weight: .bold)
         timerLabel.textAlignment = .center
-        categoryTextField.backgroundColor = .clear
-        categoryTextField.borderStyle = .none
-        categoryTextField.textColor = .white // Text color when typing
-        categoryTextField.font = UIFont.systemFont(ofSize: 14, weight: .bold)
+        
         noteTitleTextField.backgroundColor = .clear
   noteTitleTextField.textColor = .white
 
    
           let placeholderColor = UIColor.lightGray
-        categoryTextField.attributedPlaceholder = NSAttributedString(
-              string: "Enter Category ",
-              attributes: [NSAttributedString.Key.foregroundColor: placeholderColor]
-              )
+    
         noteTitleTextField.attributedPlaceholder = NSAttributedString(
             string: "Voice note name",
             attributes: [NSAttributedString.Key.foregroundColor: placeholderColor]
@@ -168,22 +293,29 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         audioRecorder?.stop()
         stopTimers()
         
-        // 1. Get the category text from your NEW label
-        let categoryText = categoryTextField.text ?? "VOICE NOTE"
-        
-        // 2. Get the description from your TextField
+        // 1. Get Description
         let descriptionText = noteTitleTextField.text?.isEmpty == false ? noteTitleTextField.text! : "No description"
         
+        // 2. Prepare Waveform Data
         let compressedLevels = stride(from: 0, to: recordedLevels.count, by: 5).map { recordedLevels[$0] }
         
-        // 3. Save both to Core Data (Make sure CoreDataManager accepts two strings)
+        // 3. 🔥 DETERMINE CATEGORY 🔥
+        // Use the selected one, or default to "Personal"
+        let categoryToSave = self.selectedCategory ?? "Personal"
+        
+        // 4. Save to Core Data
         CoreDataManager.shared.saveVoiceNote(
             fileName: currentFileName,
             duration: timerLabel.text ?? "00:00:00",
             levels: compressedLevels,
-            category: categoryText, 
+            category: categoryToSave, // 👈 Uses the variable now
             description: descriptionText
         )
+        
+        print("Saved Voice Note to Category: \(categoryToSave)")
+        
+        // 5. Notify Home Screen
+        NotificationCenter.default.post(name: NSNotification.Name("RefreshHomeNotes"), object: nil)
         
         isRecordingSessionActive = false
     }

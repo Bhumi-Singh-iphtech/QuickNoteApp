@@ -21,7 +21,7 @@ final class EditButtonView: UIView {
     override func awakeFromNib() {
         super.awakeFromNib()
 
-        applyFilledStyle()
+//        applyFilledStyle()
     }
 
 
