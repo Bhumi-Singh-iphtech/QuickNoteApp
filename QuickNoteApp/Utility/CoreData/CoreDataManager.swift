@@ -9,20 +9,9 @@ class CoreDataManager {
     func initializeCoreData() {
         _ = persistentContainer
     }
-
-    // 1. Initialize the container directly here
-    lazy var persistentContainer: NSPersistentContainer = {
-        /*
-         IMPORTANT: The name inside quotes ("Model") must match
-         the name of your .xcdatamodeld file exactly!
-         // Add this line inside your persistentContainer setup or init
-         
     
-         If your file is called "QuickNoteApp.xcdatamodeld", change "Model" below to "QuickNoteApp".
-         */
-        print("Core Data Path: \(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path)")
+    lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "QuickNoteModel")
-        
         container.loadPersistentStores { (storeDescription, error) in
             if let error = error as NSError? {
                 print(" Unresolved error \(error), \(error.userInfo)")
@@ -31,50 +20,150 @@ class CoreDataManager {
         return container
     }()
     
-    // 2. Helper to access the context
     var context: NSManagedObjectContext {
         return persistentContainer.viewContext
     }
     
-    // MARK: - Saving Data
+    // MARK: - Folder Management
+    
+    // 1. Create a new folder
+    func createFolder(name: String) {
+        let folder = FolderEntity(context: context)
+        folder.title = name
+        folder.dateCreated = Date()
+        saveContext()
+    }
+    
+    // 2. Fetch all folders
+    func fetchAllFolders() -> [FolderEntity] {
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching folders: \(error)")
+            return []
+        }
+    }
+
+    // 🔥 3. DELETE FOLDER (ADD THIS FUNCTION) 🔥
+    func deleteFolder(name: String) {
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        // Find the folder with the matching name
+        request.predicate = NSPredicate(format: "title == %@", name)
+        
+        do {
+            let results = try context.fetch(request)
+            for object in results {
+                context.delete(object) // Delete from DB
+            }
+            saveContext() // Commit changes
+            print("Folder '\(name)' deleted from CoreData")
+        } catch {
+            print("Error deleting folder: \(error)")
+        }
+    }
+    
+    // MARK: - Plain Note Management
+    func savePlainNote(content: String, title: String, category: String) {
+        let note = PlainNoteEntity(context: context)
+        note.content = content
+        note.title = title
+        note.category = category
+        note.date = Date()
+        saveContext()
+    }
+    // Add this inside CoreDataManager class, near the Plain Note section
+
+    func createPlainNote(title: String, content: String, category: String) -> PlainNoteEntity {
+        let note = PlainNoteEntity(context: context)
+        note.title = title
+        note.content = content
+        note.category = category
+        note.date = Date()
+        
+        // Save immediately
+        if context.hasChanges {
+            try? context.save()
+        }
+        
+        return note // 🔥 Returns the object so the Controller can use it
+    }
+    // In CoreDataManager.swift
+    func fetchAllPlainNotes() -> [PlainNoteEntity] {
+        let request: NSFetchRequest<PlainNoteEntity> = PlainNoteEntity.fetchRequest()
+        // Sort by date (newest first)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching all plain notes: \(error)")
+            return []
+        }
+    }
+    func ensureDefaultFolders() {
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        
+        do {
+            // Use 'context' here as defined in your class
+            let count = try context.count(for: request)
+            if count == 0 {
+                // No folders found, create the defaults
+                let defaultFolders = ["Personal", "Work", "School", "Travel"]
+                for folderName in defaultFolders {
+                    let newFolder = FolderEntity(context: context)
+                    newFolder.title = folderName
+                    
+                    // Changed from 'createdAt' to 'dateCreated'
+                    // to match your 'createFolder' method logic
+                    newFolder.dateCreated = Date()
+                }
+                saveContext()
+                print("Default folders initialized in Core Data.")
+            }
+        } catch {
+            print("Error checking for default folders: \(error)")
+        }
+    }
+    func fetchPlainNotes(for category: String) -> [PlainNoteEntity] {
+        let request: NSFetchRequest<PlainNoteEntity> = PlainNoteEntity.fetchRequest()
+        // Filter by the specific category name
+        request.predicate = NSPredicate(format: "category == %@", category)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching notes for category \(category): \(error)")
+            return []
+        }
+    }
+    
+    func deletePlainNote(_ note: PlainNoteEntity) {
+        context.delete(note)
+        saveContext()
+    }
+    
+    // MARK: - Voice Note Management
     func saveVoiceNote(fileName: String, duration: String, levels: [Float], category: String, description: String) {
         let note = VoiceNoteEntity(context: context)
         note.audioFileName = fileName
         note.durationText = duration
         note.createdAt = Date()
-        
-        // Mapping based on your request:
-        note.title = category         // From the Label on recording screen
-        note.noteDescription = description // From the TextField on recording screen
+        note.title = category
+        note.noteDescription = description
         
         if let data = try? JSONEncoder().encode(levels) {
             note.waveformData = data
         }
         saveContext()
     }
-    func deleteVoiceNote(note: VoiceNoteEntity) {
-        // 1. Delete the physical file from the Documents folder
-        if let fileName = note.audioFileName {
-            let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fileURL = path.appendingPathComponent(fileName)
-            
-            try? FileManager.default.removeItem(at: fileURL)
-        }
 
-        // 2. Delete the record from Core Data
-        context.delete(note)
-        
-        // 3. Save the changes
-        saveContext()
-    }
-    
-    // MARK: - Fetching Data
-    
     func fetchAllNotes() -> [VoiceNoteEntity] {
         let request: NSFetchRequest<VoiceNoteEntity> = VoiceNoteEntity.fetchRequest()
-        // Sort by newest first
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
-        
         do {
             return try context.fetch(request)
         } catch {
@@ -82,24 +171,31 @@ class CoreDataManager {
             return []
         }
     }
+    
+    func deleteVoiceNote(note: VoiceNoteEntity) {
+        if let fileName = note.audioFileName {
+            let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let fileURL = path.appendingPathComponent(fileName)
+            try? FileManager.default.removeItem(at: fileURL)
+        }
+        context.delete(note)
+        saveContext()
+    }
+    
+    // Overloaded save for simpler calls if needed
     func saveVoiceNote(fileName: String, duration: String, levels: [Float]) {
         let note = VoiceNoteEntity(context: context)
         note.id = UUID().uuidString
         note.audioFileName = fileName
         note.createdAt = Date()
         note.durationText = duration
-        
-        // Convert Float array to Data to store in CoreData
         if let data = try? JSONEncoder().encode(levels) {
             note.waveformData = data
         }
-        
         saveContext()
     }
     
-    // MARK: - Helper
-    
-    private func saveContext() {
+   func saveContext() {
         if context.hasChanges {
             do {
                 try context.save()
@@ -109,4 +205,10 @@ class CoreDataManager {
             }
         }
     }
+}
+extension Notification.Name {
+    static let refreshHomeNotes = Notification.Name("RefreshHomeNotes")
+}
+extension Notification.Name {
+    static let navigateToHome = Notification.Name("NavigateToHome")
 }
