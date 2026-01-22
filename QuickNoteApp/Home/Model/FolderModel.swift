@@ -8,4 +8,5 @@
 struct FolderModel {
     let title: String
     let category: FolderCategory
+    var customSymbolName: String? // Add this property
 }

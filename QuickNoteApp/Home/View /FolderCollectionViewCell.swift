@@ -42,6 +42,19 @@ class FolderCollectionViewCell: UICollectionViewCell {
 
     func configure(with model: FolderModel) {
         titleLabel.text = model.title
-        iconImageView.image = UIImage(named: model.category.iconAssetName)
+        
+        // Create a Bold configuration
+        let boldConfig = UIImage.SymbolConfiguration(weight: .bold)
+        
+        if let customIconName = model.customSymbolName {
+            // Apply the bold configuration to the SF Symbol
+            iconImageView.image = UIImage(systemName: customIconName, withConfiguration: boldConfig)
+        } else {
+            
+            iconImageView.image = UIImage(named: model.category.iconAssetName)
+        }
+        
+       
+        iconImageView.tintColor = .white
     }
 }
