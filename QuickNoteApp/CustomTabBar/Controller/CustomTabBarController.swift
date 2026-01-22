@@ -13,16 +13,37 @@ class CustomTabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-    
+ 
         self.view.backgroundColor = UIColor(hex: "#2F2F34")
         
         // Hide system tab bar
         tabBar.isHidden = true
         
         setupCustomTabBar()
+        NotificationCenter.default.addObserver(
+                  self,
+                  selector: #selector(handleHomeNavigation),
+                  name: .navigateToHome,
+                  object: nil
+              )
 
     }
-    
+    @objc private func handleHomeNavigation() {
+        // 1. Switch to Home Tab (Index 0)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            
+            self.selectedIndex = 0
+            
+            // 2. Ensure the custom tab bar is visible (in case it was hidden)
+            self.setCustomTabBar(hidden: false)
+        }
+    }
+        // Don't forget to remove observer when this controller dies
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
       
