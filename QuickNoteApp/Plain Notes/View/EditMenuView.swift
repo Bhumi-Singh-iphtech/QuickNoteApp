@@ -45,7 +45,7 @@ final class EditMenuView: UIView {
             createButton(title: "Attachment", icon: "paperclip", action: #selector(attachmentTapped)),
             createButton(title: "Chart", icon: "chart.bar", action: #selector(chartTapped)),
             createButton(title: "Link", icon: "link", action: #selector(linkTapped)),
-            createButton(title: "Audio", icon: "mic", action: #selector(audioTapped)),
+            createButton(title: "edit ", icon: "pencil", action: #selector(audioTapped)),
             createButton(title: "Sketch", icon: "pencil.tip", action: #selector(sketchTapped))
         ]
 
