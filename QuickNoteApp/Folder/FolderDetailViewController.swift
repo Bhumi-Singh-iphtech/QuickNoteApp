@@ -216,8 +216,11 @@ extension FolderDetailViewController: UICollectionViewDataSource, UICollectionVi
     
     // MARK: - Delete Helper
     private func showDeleteAlert(for item: HomeNoteItem) {
-        let alert = UIAlertController(title: "Delete Note", message: "Are you sure you want to delete this note from this folder?", preferredStyle: .alert)
-        
+        let alert = UIAlertController(
+            title: AlertMessages.Title.deleteNote,
+            message: AlertMessages.Message.deleteNoteConfirmation,
+            preferredStyle: .alert
+        )
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
             switch item {
             case .voice(let voiceNote):

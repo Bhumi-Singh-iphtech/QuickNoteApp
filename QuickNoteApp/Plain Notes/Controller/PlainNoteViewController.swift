@@ -2,7 +2,7 @@ import UIKit
 import CoreData
 final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelegate {
     var currentNote: PlainNoteEntity?
-
+    private var selectedCategory: String = "Personal"
     // MARK: - Outlets
     @IBOutlet weak var editButtonView: EditButtonView!
     @IBOutlet weak var dateLabel: UILabel!
@@ -32,7 +32,7 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
              
                 titleLabel.text = note.title
                 textView.text = note.content
-             
+                self.selectedCategory = note.category ?? "Personal"
                 if let date = note.date {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
@@ -139,7 +139,7 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
         
         bottomSheet.onMoveToFolder = { [weak self] folderName in
             guard let self = self else { return }
-            
+            self.selectedCategory = folderName
            
             if let existingNote = self.currentNote {
                 existingNote.category = folderName
@@ -160,9 +160,16 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
                 print("Created NEW note in category: \(folderName)")
             }
             
-            // Visual Feedback
-            let alert = UIAlertController(title: "Moved", message: "Note moved to \(folderName)", preferredStyle: .alert)
+            // Visual Feedback using the new constants
+            let alert = UIAlertController(
+                title: AlertMessages.Title.moved,
+                message: AlertMessages.Message.movedToFolder(folderName),
+                preferredStyle: .alert
+            )
+
             self.present(alert, animated: true)
+
+            // Auto-dismiss after 1 second
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 alert.dismiss(animated: true)
             }
@@ -172,9 +179,12 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
         bottomSheet.onDeleteRequest = { [weak self] in
             guard let self = self else { return }
             
-            let alert = UIAlertController(title: "Delete Note", message: "Are you sure you want to delete this note?", preferredStyle: .alert)
-            
-            let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
+            let alert = UIAlertController(
+                title: AlertMessages.Title.deleteNote,
+                message: AlertMessages.Message.deleteNoteConfirmation,
+                preferredStyle: .alert
+            )
+            let deleteAction = UIAlertAction(title: AlertMessages.Action.delete, style: .destructive) { _ in
                 //  Delete from DB
                 if let noteToDelete = self.currentNote {
                     CoreDataManager.shared.deletePlainNote(noteToDelete)
@@ -187,11 +197,13 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
                 self.navigateBack()
             }
             
-            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
-            
-            alert.addAction(deleteAction)
-            alert.addAction(cancelAction)
-            self.present(alert, animated: true)
+                            let cancelAction = UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel)
+                                
+                                // 4. Actions add karein aur present karein
+                                alert.addAction(deleteAction)
+                                alert.addAction(cancelAction)
+                                
+                                self.present(alert, animated: true)
         }
         
         bottomSheet.show(in: view)
@@ -199,18 +211,24 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
     
     // MARK: - Save Alert Logic
     private func showSaveConfirmationAlert() {
-        print("Presenting Alert...")
+        print("Presenting Save Confirmation Alert...")
         
-        let alert = UIAlertController(title: "Save Note", message: "Are you sure you want to save this note?", preferredStyle: .alert)
-        
-        // Save Action
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            self.saveNoteAndExit()
+        // 1. Alert Controller with Constants
+        let alert = UIAlertController(
+            title: AlertMessages.Title.saveNote,
+            message: AlertMessages.Message.saveNoteConfirmation,
+            preferredStyle: .alert
+        )
+
+        // 2. Save Action with Constant
+        let saveAction = UIAlertAction(title: AlertMessages.Action.save, style: .default) { [weak self] _ in
+            self?.saveNoteAndExit()
         }
         
-        // Cancel Action
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        // 3. Cancel Action with Constant
+        let cancelAction = UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel)
         
+        // 4. Add Actions and Present
         alert.addAction(saveAction)
         alert.addAction(cancelAction)
         
@@ -251,12 +269,12 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
             CoreDataManager.shared.savePlainNote(
                 content: noteContent,
                 title: noteTitle,
-                category: "Personal"
+                category: self.selectedCategory
             )
         }
         
         // 3. Notify Home Screen to reload
-        NotificationCenter.default.post(name: NSNotification.Name("RefreshHomeNotes"), object: nil)
+        NotificationCenter.default.post(name: .refreshHomeNotes, object: nil)
         
        
     }

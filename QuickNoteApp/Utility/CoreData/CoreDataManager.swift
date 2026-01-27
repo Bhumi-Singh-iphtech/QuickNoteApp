@@ -73,6 +73,7 @@ class CoreDataManager {
         note.category = category
         note.date = Date()
         saveContext()
+        
     }
     // Add this inside CoreDataManager class, near the Plain Note section
 
@@ -88,7 +89,7 @@ class CoreDataManager {
             try? context.save()
         }
         
-        return note // 🔥 Returns the object so the Controller can use it
+        return note
     }
     // In CoreDataManager.swift
     func fetchAllPlainNotes() -> [PlainNoteEntity] {
@@ -116,8 +117,6 @@ class CoreDataManager {
                     let newFolder = FolderEntity(context: context)
                     newFolder.title = folderName
                     
-                    // Changed from 'createdAt' to 'dateCreated'
-                    // to match your 'createFolder' method logic
                     newFolder.dateCreated = Date()
                 }
                 saveContext()

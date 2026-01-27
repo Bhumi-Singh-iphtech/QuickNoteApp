@@ -135,7 +135,11 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         bottomSheet.onDeleteRequest = { [weak self] in
             guard let self = self, let note = self.currentVoiceNote else { return }
             
-            let alert = UIAlertController(title: "Delete", message: "Delete this recording?", preferredStyle: .alert)
+            let alert = UIAlertController(
+                title: AlertMessages.Title.deleteNote,
+                message: AlertMessages.Message.deleteNoteConfirmation,
+                preferredStyle: .alert
+            )
             alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
                 CoreDataManager.shared.deleteVoiceNote(note: note)
                 self.navigateBack()
@@ -154,7 +158,11 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
     private func showSaveConfirmationAlert() {
         print("Presenting Alert...") // Debug print
         
-        let alert = UIAlertController(title: "Save Note", message: "Are you sure you want to save this note?", preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: AlertMessages.Title.saveNote,
+            message: AlertMessages.Message.saveNoteConfirmation,
+            preferredStyle: .alert
+        )
         
         // Save Action
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
@@ -173,15 +181,8 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         // 1. Process the recording and save to Core Data
         finalizeAndSaveRecording()
         
-        // 2. Visual Feedback (optional but recommended since the screen stays open)
-        let alert = UIAlertController(title: "Saved", message: "Voice note saved successfully.", preferredStyle: .alert)
-        self.present(alert, animated: true)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            alert.dismiss(animated: true)
-        }
-        
-        // NAVIGATION REMOVED:
-        // The screen will now stay exactly where it is.
+       
+
     }
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
@@ -299,7 +300,7 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         // 2. Prepare Waveform Data
         let compressedLevels = stride(from: 0, to: recordedLevels.count, by: 5).map { recordedLevels[$0] }
         
-        // 3. 🔥 DETERMINE CATEGORY 🔥
+        // DETERMINE CATEGORY
         // Use the selected one, or default to "Personal"
         let categoryToSave = self.selectedCategory ?? "Personal"
         
@@ -308,7 +309,7 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
             fileName: currentFileName,
             duration: timerLabel.text ?? "00:00:00",
             levels: compressedLevels,
-            category: categoryToSave, // 👈 Uses the variable now
+            category: categoryToSave, //  Uses the variable now
             description: descriptionText
         )
         
