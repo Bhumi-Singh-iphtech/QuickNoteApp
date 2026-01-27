@@ -1,6 +1,6 @@
 import UIKit
 import AVFoundation
-
+import CoreData
 enum HomeNoteItem {
     case plain(PlainNoteEntity)
     case voice(VoiceNoteEntity)
@@ -22,10 +22,10 @@ class HomeViewController: UIViewController {
         super.viewDidLoad()
         navigationController?.setNavigationBarHidden(true, animated: false)
         
-        // 1. Initialize Folders in DB
+        // Initialize Folders in DB
         CoreDataManager.shared.ensureDefaultFolders()
         
-        // 2. Setup UI
+        //  Setup UI
         setupCollectionView()
         setupMiniPlayer()
         
@@ -36,45 +36,32 @@ class HomeViewController: UIViewController {
         loadFolders()
         combineData()
         
-        // 4. 🔥 REGISTER FOR NOTIFICATIONS 🔥
+        // REGISTER FOR NOTIFICATIONS
         NotificationCenter.default.addObserver(self, selector: #selector(refreshNotes), name: .refreshHomeNotes, object: nil)
-        // If you have a separate notification for folders, add it here too
+       
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        self.navigationController?.setNavigationBarHidden(true, animated: false)
-       
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        hideMiniPlayer()
+        // Har baar screen par aate hi data refresh karo
+        refreshNotes()
+        refreshFolders()
     }
 
-    // MARK: - Refresh Logic
-    @objc private func refreshNotes() {
-        combineData()
-    }
-    
-    @objc private func refreshFolders() {
-        loadFolders()
-    }
-
-    // MARK: - Data Loading
     private func combineData() {
-     
+        // 🔥 Force refresh cache
+        CoreDataManager.shared.context.refreshAllObjects()
+
         let savedVoiceNotes = CoreDataManager.shared.fetchAllNotes()
-        
         let savedPlainNotes = CoreDataManager.shared.fetchAllPlainNotes()
+
+        // DEBUG: Console mein check karein ye print ho raha hai ya nahi
+        print("Home: Found \(savedPlainNotes.count) Plain Notes and \(savedVoiceNotes.count) Voice Notes")
 
         let voiceItems = savedVoiceNotes.map { HomeNoteItem.voice($0) }
         let plainItems = savedPlainNotes.map { HomeNoteItem.plain($0) }
         
-    
         let allItems = voiceItems + plainItems
-        
-
 
         displayItems = allItems.sorted { item1, item2 in
             let date1: Date
@@ -93,9 +80,29 @@ class HomeViewController: UIViewController {
             return date1 > date2
         }
         
-       
-        recentNotesCollectionView.reloadData()
+        DispatchQueue.main.async {
+            self.recentNotesCollectionView.reloadData()
+            // Force layout update
+            self.recentNotesCollectionView.collectionViewLayout.invalidateLayout()
+        }
     }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        hideMiniPlayer()
+    }
+
+    // MARK: - Refresh Logic
+    @objc private func refreshNotes() {
+        combineData()
+    }
+    
+    @objc private func refreshFolders() {
+        loadFolders()
+    }
+
+    // MARK: - Data Loading
+
     
     private func loadFolders() {
        
@@ -112,7 +119,7 @@ class HomeViewController: UIViewController {
      
         let savedFolders = savedFolderEntities.compactMap { entity -> FolderModel? in
             guard let title = entity.title else { return nil }
-            // Avoid duplicates
+   
             if defaultFolders.contains(where: { $0.title == title }) { return nil }
             
             return FolderModel(title: title, category: .other)
@@ -130,7 +137,11 @@ class HomeViewController: UIViewController {
     }
     
     private func showAddFolderAlert() {
-        let alert = UIAlertController(title: "Add Folder", message: "Select a category", preferredStyle: .actionSheet)
+        let alert = UIAlertController(
+            title: AlertMessages.Title.addFolder,
+            message: AlertMessages.Message.folderCategory,
+            preferredStyle: .alert
+        )
 
         FolderCategory.allCases.forEach { category in
             if category != .other {
