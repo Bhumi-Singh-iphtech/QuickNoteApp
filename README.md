@@ -78,17 +78,29 @@ The app focuses on productivity, intuitive navigation, and seamless audio playba
 * Enables continuous audio playback while navigating the app.
 * Playback state stays in sync with the active voice note.
 
-### Smart Icon Mapper
-
-* Logic-based `IconMapper` class assigns icons automatically based on folder names.
-* Supports both **SF Symbols** and custom image assets.
-* Enhances visual clarity and organization.
-
 ### Folder Management
 
 * Predefined categories and dynamic custom folders.
 * Custom categories stored using `UserDefaults`.
 * Long-press gestures for deleting folders safely.
+
+## Note edit & Share Menu
+
+* A contextual Share Menu is available for note actions and edit menu is also present. 
+* The share menu adapts dynamically based on the note state.
+
+### Add Note State
+* When creating a new note, the share/options menu provides:
+* Save Note – Saves the note to local storage.
+* Share Note – Allows sharing the note content using the system share sheet.
+* Delete option is hidden at this stage to prevent accidental data loss.
+
+### Edit Note State
+
+* When editing an existing note, the menu updates to include:
+* Save Changes
+* Share Note
+* Delete Note – Permanently removes the note after confirmation.
 
 
 ## Prerequisites
