@@ -16,69 +16,71 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
     private var currentFileName: String = ""
     private var recordingTimer: Timer?
     private var waveformTimer: Timer?
-    private var selectedCategory: String? = nil
+   
     private var accumulatedTime: TimeInterval = 0
     private var sessionStartTime: Date?
     private var isRecordingSessionActive = false
     private var recordedLevels: [Float] = []
+    private var selectedCategory: String = "Personal"
     private func loadVoiceNoteData() {
-           guard let note = currentVoiceNote else { return }
+  
+            guard let note = currentVoiceNote else { return }
+            
+            // 1. Set Title (Remember: we saved the name into 'noteDescription')
+            noteTitleTextField.text = note.noteDescription ?? "No Name"
+            
+            // 2. Set Category
+            self.selectedCategory = note.title ?? "Personal"
+            
+            // 3. Set Date
+            if let date = note.createdAt {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
+                dateLabel.text = formatter.string(from: date)
+            }
+            
+            // 4. Set Duration
+            timerLabel.text = note.durationText ?? "00:00:00"
+            
+            // 5. Draw Waveform
+            if let data = note.waveformData,
+               let levels = try? JSONDecoder().decode([Float].self, from: data) {
+                
+                waveformView.reset() // Clear any existing lines
+                
+                // Convert [Float] to [CGFloat] and send to waveformView
+                let cgLevels = levels.map { CGFloat($0) }
+                waveformView.setLevels(cgLevels) // Use setLevels for static data
+            }
+            
+            // 6. UI Adjustments for Editing Mode
+            recordButton.isEnabled = false
+            recordButton.alpha = 0.5
+        }
            
-           // 1. Set Title
-           noteTitleTextField.text = note.title // assuming you used 'title' for name, or 'noteDescription'
-           // If your entity uses 'audioFileName' as the unique ID, keep track of it:
-           currentFileName = note.audioFileName ?? ""
-           
-           // 2. Set Category (for the Share Menu logic)
-           selectedCategory = note.title // Or note.category depending on your Entity
-           
-           // 3. Set Date
-           if let date = note.createdAt {
-               let formatter = DateFormatter()
-               formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
-               dateLabel.text = formatter.string(from: date)
-           }
-           
-           // 4. Set Duration
-           timerLabel.text = note.durationText ?? "00:00:00"
-           
-           // 5. Draw Waveform
-           if let data = note.waveformData,
-              let levels = try? JSONDecoder().decode([Float].self, from: data) {
-               
-               waveformView.reset()
-               // Assuming your WaveformView has a method to set all levels at once
-               // If not, you might need to loop: levels.forEach { waveformView.addLevel(CGFloat($0)) }
-               // But usually for static display:
-               for level in levels {
-                   waveformView.addLevel(CGFloat(level))
-               }
-           }
-           
-           // 6. Disable Record Button (Since we are viewing/editing, not recording new audio)
-           // You might want to change this button to a "Play" button in the future
-           recordButton.isEnabled = false
-           recordButton.alpha = 0.5
-       }
+        
     private let customNavBar = CustomNavigationBar()
     var currentVoiceNote: VoiceNoteEntity?
     // MARK: - Lifecycle
     override func viewDidLoad() {
-        super.viewDidLoad()
-        setupCustomNavBar()
-        setupUI()
-        setupDate()
-        setupRecordButtonGestures()
-        requestMicrophonePermission()
-        noteTitleTextField.delegate = self
-     
-          
-          // Tap Gesture to dismiss keyboard when tapping the background
-          let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-          // This allows buttons (like record) to still work while keyboard is up
-          tapGesture.cancelsTouchesInView = false
-          view.addGestureRecognizer(tapGesture)
-    }
+           super.viewDidLoad()
+           setupCustomNavBar()
+           setupUI()
+           setupDate()
+           setupRecordButtonGestures()
+           requestMicrophonePermission()
+           noteTitleTextField.delegate = self
+           
+           // 🔥 Correctly call the load function
+           if currentVoiceNote != nil {
+               loadVoiceNoteData()
+           }
+           
+           let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+           tapGesture.cancelsTouchesInView = false
+           view.addGestureRecognizer(tapGesture)
+       }
+    
     @objc func dismissKeyboard() {
         view.endEditing(true)
     }
@@ -112,26 +114,39 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
         let savedFolderNames = savedFolderObjects.compactMap { $0.title }
         let uniqueSavedFolders = savedFolderNames.filter { !defaultFolders.contains($0) }
         bottomSheet.existingFolders = defaultFolders + uniqueSavedFolders
-        
+      
         // Tell Menu if Existing
         bottomSheet.isExistingNote = (self.currentVoiceNote != nil)
         
         // Callbacks
-        bottomSheet.onCreateNewFolder = { newName in
-            CoreDataManager.shared.createFolder(name: newName)
-        }
-        
+        // 3. Move to Folder Logic
         bottomSheet.onMoveToFolder = { [weak self] folderName in
-            self?.selectedCategory = folderName
+            guard let self = self else { return }
             
-            // If existing, update immediately
-            if let existing = self?.currentVoiceNote {
-                existing.title = folderName // Assuming 'title' is used for Category in your Voice Entity
+            // Local variable update karein taaki Save logic ko pata chale
+            self.selectedCategory = folderName
+            
+            // Agar note pehle se save hai, toh DB mein turant update karein
+            if let existing = self.currentVoiceNote {
+                existing.title = folderName // VoiceNote mein 'title' attribute category ke liye use ho raha hai
                 CoreDataManager.shared.saveContext()
+            }
+            
+            // 🔥 Visual Feedback (Moved Alert)
+            let alert = UIAlertController(
+                title: AlertMessages.Title.moved,
+                message: AlertMessages.Message.movedToFolder(folderName), // Ab 'folderName' scope mein hai
+                preferredStyle: .alert
+            )
+            self.present(alert, animated: true)
+            
+            // 1 second baad auto-dismiss
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                alert.dismiss(animated: true)
             }
         }
         
-        //  DELETE LOGIC
+        // 4. Delete Logic with Centralized Messages
         bottomSheet.onDeleteRequest = { [weak self] in
             guard let self = self, let note = self.currentVoiceNote else { return }
             
@@ -140,15 +155,20 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
                 message: AlertMessages.Message.deleteNoteConfirmation,
                 preferredStyle: .alert
             )
-            alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+            
+            let deleteAction = UIAlertAction(title: AlertMessages.Action.delete, style: .destructive) { _ in
                 CoreDataManager.shared.deleteVoiceNote(note: note)
-                self.navigateBack()
-            }))
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+                self.navigateBack() // Delete ke baad home par jayein
+            }
+            
+            let cancelAction = UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel)
+            
+            alert.addAction(deleteAction)
+            alert.addAction(cancelAction)
             self.present(alert, animated: true)
         }
         
-        // Save Logic
+        // 5. Save Logic
         bottomSheet.onSaveRequest = { [weak self] in
             self?.showSaveConfirmationAlert()
         }
@@ -290,36 +310,34 @@ class VoiceNoteViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func finalizeAndSaveRecording() {
-        guard isRecordingSessionActive else { return }
-        audioRecorder?.stop()
-        stopTimers()
-        
-        // 1. Get Description
-        let descriptionText = noteTitleTextField.text?.isEmpty == false ? noteTitleTextField.text! : "No description"
-        
-        // 2. Prepare Waveform Data
-        let compressedLevels = stride(from: 0, to: recordedLevels.count, by: 5).map { recordedLevels[$0] }
-        
-        // DETERMINE CATEGORY
-        // Use the selected one, or default to "Personal"
-        let categoryToSave = self.selectedCategory ?? "Personal"
-        
-        // 4. Save to Core Data
-        CoreDataManager.shared.saveVoiceNote(
-            fileName: currentFileName,
-            duration: timerLabel.text ?? "00:00:00",
-            levels: compressedLevels,
-            category: categoryToSave, //  Uses the variable now
-            description: descriptionText
-        )
-        
-        print("Saved Voice Note to Category: \(categoryToSave)")
-        
-        // 5. Notify Home Screen
-        NotificationCenter.default.post(name: NSNotification.Name("RefreshHomeNotes"), object: nil)
-        
-        isRecordingSessionActive = false
-    }
+           let descriptionText = noteTitleTextField.text?.isEmpty == false ? noteTitleTextField.text! : "No description"
+           let categoryToSave = self.selectedCategory // 🔥 Use the variable
+
+           if isRecordingSessionActive {
+               audioRecorder?.stop()
+               stopTimers()
+               
+               let compressedLevels = stride(from: 0, to: recordedLevels.count, by: 5).map { recordedLevels[$0] }
+               
+               // Capture the new note so further saves update this one
+               let newNote = CoreDataManager.shared.saveVoiceNote(
+                   fileName: currentFileName,
+                   duration: timerLabel.text ?? "00:00:00",
+                   levels: compressedLevels,
+                   category: categoryToSave,
+                   description: descriptionText
+               )
+               self.currentVoiceNote = newNote
+               isRecordingSessionActive = false
+           } else if let existing = currentVoiceNote {
+               // Updating metadata if already saved
+               existing.noteDescription = descriptionText
+               existing.title = categoryToSave
+               CoreDataManager.shared.saveContext()
+           }
+           
+           NotificationCenter.default.post(name: .refreshHomeNotes, object: nil)
+       }
     private func startTimers() {
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let start = self.sessionStartTime else { return }

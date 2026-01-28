@@ -43,13 +43,13 @@ class HomeViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Har baar screen par aate hi data refresh karo
+        
         refreshNotes()
         refreshFolders()
     }
 
     private func combineData() {
-        // 🔥 Force refresh cache
+        
         CoreDataManager.shared.context.refreshAllObjects()
 
         let savedVoiceNotes = CoreDataManager.shared.fetchAllNotes()
@@ -105,32 +105,22 @@ class HomeViewController: UIViewController {
 
     
     private func loadFolders() {
-       
-        let defaultFolders = [
-            FolderModel(title: "Personal", category: .personal),
-            FolderModel(title: "Work", category: .work),
-            FolderModel(title: "School", category: .school),
-            FolderModel(title: "Travel", category: .travel)
-        ]
-        
- 
         let savedFolderEntities = CoreDataManager.shared.fetchAllFolders()
         
-     
-        let savedFolders = savedFolderEntities.compactMap { entity -> FolderModel? in
-            guard let title = entity.title else { return nil }
-   
-            if defaultFolders.contains(where: { $0.title == title }) { return nil }
+        self.folders = savedFolderEntities.map { entity in
+            let folderTitle = entity.title ?? "Untitled"
             
-            return FolderModel(title: title, category: .other)
+            // We still detect category for the default 4 (Work, Personal, etc.)
+            let detectedCategory = FolderCategory(rawValue: folderTitle) ?? .other
+            
+            return FolderModel(title: folderTitle, category: detectedCategory)
         }
         
-      
-        self.folders = defaultFolders + savedFolders
-        self.collectionView.reloadData()
-        self.updateFoldersBackgroundView()
+        DispatchQueue.main.async {
+            self.collectionView.reloadData()
+            self.updateFoldersBackgroundView()
+        }
     }
-    
 
     @IBAction func addFolderTapped(_ sender: UIButton) {
         showAddFolderAlert()
@@ -143,6 +133,7 @@ class HomeViewController: UIViewController {
             preferredStyle: .alert
         )
 
+        // Add standard categories from Enum
         FolderCategory.allCases.forEach { category in
             if category != .other {
                 alert.addAction(UIAlertAction(title: category.rawValue, style: .default) { _ in
@@ -151,28 +142,66 @@ class HomeViewController: UIViewController {
             }
         }
 
-        alert.addAction(UIAlertAction(title: "Other", style: .default) { _ in
+        // "Other" option using centralized Action string
+        alert.addAction(UIAlertAction(title: AlertMessages.Action.other, style: .default) { _ in
+              self.showOthersSubMenu()
+          })
+
+        // Cancel option using centralized Action string
+        alert.addAction(UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel))
+        
+        present(alert, animated: true)
+    }
+    private func showOthersSubMenu() {
+        let subMenu = UIAlertController(
+            title: "Other Categories",
+            message: "Select a custom category or add a new one.",
+            preferredStyle: .actionSheet
+        )
+
+        // 1. Load custom names saved in CustomCategoryManager (UserDefaults)
+        let savedCategories = CustomCategoryManager.shared.fetchCategories()
+        savedCategories.forEach { name in
+            subMenu.addAction(UIAlertAction(title: name, style: .default) { _ in
+                // Create a folder in Core Data using this name
+                self.createNewFolder(title: name, category: .other)
+            })
+        }
+
+        // 2. Option to add a brand new name to the list
+        subMenu.addAction(UIAlertAction(title: "Add new Category", style: .destructive) { _ in
             self.showNewCategoryTextField()
         })
 
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        present(alert, animated: true)
+        subMenu.addAction(UIAlertAction(title: "Back", style: .cancel))
+        present(subMenu, animated: true)
     }
-    
     private func showNewCategoryTextField() {
-        let alert = UIAlertController(title: "New Category", message: nil, preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: AlertMessages.Title.newCategory,
+            message: "This will add the name to your 'Other' list.",
+            preferredStyle: .alert
+        )
+        
         alert.addTextField { textField in
             textField.autocapitalizationType = .words
+          
         }
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Add", style: .default) { _ in
+        
+        alert.addAction(UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel))
+        
+        alert.addAction(UIAlertAction(title: "Add to List", style: .default) { _ in
             if let name = alert.textFields?.first?.text, !name.isEmpty {
-                self.createNewFolder(title: name, category: .other)
+                // Save to the list (CustomCategoryManager)
+                CustomCategoryManager.shared.saveCategory(name)
+                
+                
+                self.showOthersSubMenu()
             }
         })
+        
         present(alert, animated: true)
     }
-
     private func createNewFolder(title: String, category: FolderCategory) {
         // Save to CoreData
         CoreDataManager.shared.createFolder(name: title)
@@ -262,43 +291,58 @@ extension HomeViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return collectionView == self.collectionView ? folders.count : displayItems.count
     }
-
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
         if collectionView == self.collectionView {
-     
+           
+            // Safe check to prevent index out of range
+            guard indexPath.item < folders.count else { return UICollectionViewCell() }
+            
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "FolderCollectionViewCell", for: indexPath) as! FolderCollectionViewCell
             let folder = folders[indexPath.item]
             cell.configure(with: folder)
-            
-           
-            cell.onDeleteRequest = { [weak self] in
-                guard let self = self else { return }
+            // Navigate on Single Tap
+            cell.onTapRequest = { [weak self] in
+                     self?.navigateToFolder(folder)
+                 }
+                 
+                 // Delete on Long Press
+                 cell.onDeleteRequest = { [weak self] in
+                     guard let self = self else { return }
                 
-                let alert = UIAlertController(title: "Delete Folder", message: "Do you want to delete '\(folder.title)'?", preferredStyle: .alert)
-                let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
-                let okAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
-                    
-                    //  Delete from CoreData
+                let alert = UIAlertController(
+                    title: AlertMessages.Title.deleteFolder,
+                    message: AlertMessages.Message.deleteFolderConfirmation,
+                    preferredStyle: .alert
+                )
+                
+                let cancelAction = UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel)
+                
+                let okAction = UIAlertAction(title: AlertMessages.Action.delete, style: .destructive) { _ in
+                    // Delete from CoreData
                     CoreDataManager.shared.deleteFolder(name: folder.title)
                     
-                 
-                    self.folders.remove(at: indexPath.item)
-                    self.collectionView.reloadData()
-                    self.updateFoldersBackgroundView()
+                    // Refresh the whole folder list to stay in sync
+                    self.loadFolders()
                 }
+                
                 alert.addAction(cancelAction)
                 alert.addAction(okAction)
-                self.present(alert, animated: true, completion: nil)
+                self.present(alert, animated: true)
             }
             return cell
             
         } else {
-         
+            // MARK: - Recent Notes Collection View
+            // Safe check to prevent index out of range
+            guard indexPath.item < displayItems.count else { return UICollectionViewCell() }
+            
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "RecentNotesCollectionViewCell", for: indexPath) as! RecentNotesCollectionViewCell
             let item = displayItems[indexPath.item]
             cell.configure(with: item)
             
+            // Voice Playback Logic
             cell.onPlayTapped = { [weak self] in
                 if case .voice(let note) = item {
                     AudioManager.shared.play(note)
@@ -306,12 +350,17 @@ extension HomeViewController: UICollectionViewDataSource {
                 }
             }
             
+            // Note Deletion Logic
             cell.onDeleteTapped = { [weak self] in
                 guard let self = self else { return }
                 
-                let alert = UIAlertController(title: "Delete Note", message: "Are you sure you want to delete this note?", preferredStyle: .alert)
+                let alert = UIAlertController(
+                    title: AlertMessages.Title.deleteNote,
+                    message: AlertMessages.Message.deleteNoteConfirmation,
+                    preferredStyle: .alert
+                )
                 
-                let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
+                let deleteAction = UIAlertAction(title: AlertMessages.Action.delete, style: .destructive) { _ in
                     switch item {
                     case .voice(let voiceNote):
                         CoreDataManager.shared.deleteVoiceNote(note: voiceNote)
@@ -319,35 +368,29 @@ extension HomeViewController: UICollectionViewDataSource {
                         CoreDataManager.shared.deletePlainNote(plainNote)
                     }
                     
+                    // Refresh recent notes list
                     self.refreshNotes()
                 }
                 
                 alert.addAction(deleteAction)
-                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+                alert.addAction(UIAlertAction(title: AlertMessages.Action.cancel, style: .cancel))
                 self.present(alert, animated: true)
             }
             
+            // Arrow Navigation Logic
             cell.onArrowTapped = { [weak self] in
                 var categoryName = "General"
-                
                 switch item {
                 case .plain(let n):
-            
-                    if let cat = n.category, !cat.isEmpty {
-                        categoryName = cat
-                    }
-                    
+                    if let cat = n.category, !cat.isEmpty { categoryName = cat }
                 case .voice(let n):
-                    if let title = n.title, !title.isEmpty {
-                        categoryName = title
-                    }
+                    if let title = n.title, !title.isEmpty { categoryName = title }
                 }
                 
-                print("Navigating to folder: \(categoryName)") // Debug print
-                
-                let folder = FolderModel(title: categoryName, category: .other)
+                let folder = FolderModel(title: categoryName, category: FolderCategory(rawValue: categoryName) ?? .other)
                 self?.navigateToFolder(folder)
             }
+            
             return cell
         }
     }
@@ -368,18 +411,18 @@ extension HomeViewController: UICollectionViewDelegate {
             
             switch item {
             case .plain(let note):
-                //FIX: Navigate to Edit Screen
+                // Navigate to Edit Screen
                 let storyboard = UIStoryboard(name: "Main", bundle: nil)
                 if let vc = storyboard.instantiateViewController(withIdentifier: "PlainNoteViewController") as? PlainNoteViewController {
                     
-                    // Pass the note object so we edit this specific one
+                    
                     vc.currentNote = note
                     
                     self.navigationController?.pushViewController(vc, animated: true)
                 }
                 
             case .voice(let voiceNote):
-                // FIX: Navigate to Voice Note Screen
+                // Navigate to Voice Note Screen
                 let storyboard = UIStoryboard(name: "Main", bundle: nil)
                 if let vc = storyboard.instantiateViewController(withIdentifier: "VoiceNoteViewController") as? VoiceNoteViewController {
                     

@@ -92,7 +92,7 @@ class CustomTabBarView: UIView {
     func updateSelection(index: Int) {
         tabItems.enumerated().forEach { i, item in
             let color: UIColor = (i == index)
-                ? UIColor(hex: "#A6ABFF")   // selected color
+                ? UIColor(hex: "#A6ABFF")   
                 : UIColor(hex: "#A7A8A9")
 
             (item.arrangedSubviews[0] as? UIImageView)?.tintColor = color

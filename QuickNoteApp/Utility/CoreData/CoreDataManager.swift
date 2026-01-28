@@ -37,7 +37,7 @@ class CoreDataManager {
     // 2. Fetch all folders
     func fetchAllFolders() -> [FolderEntity] {
         let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        request.sortDescriptors = [NSSortDescriptor(key: "dateCreated", ascending: true)]
         
         do {
             return try context.fetch(request)
@@ -66,15 +66,17 @@ class CoreDataManager {
     }
     
     // MARK: - Plain Note Management
-    func savePlainNote(content: String, title: String, category: String) {
-        let note = PlainNoteEntity(context: context)
-        note.content = content
-        note.title = title
-        note.category = category
-        note.date = Date()
-        saveContext()
-        
-    }
+    func savePlainNote(content: String, title: String, category: String) ->
+        PlainNoteEntity {
+            let note = PlainNoteEntity(context: context)
+            note.content = content
+            note.title = title
+            note.category = category
+            note.date = Date()
+            saveContext()
+            return note
+        }
+    
     // Add this inside CoreDataManager class, near the Plain Note section
 
     func createPlainNote(title: String, content: String, category: String) -> PlainNoteEntity {
@@ -146,20 +148,20 @@ class CoreDataManager {
     }
     
     // MARK: - Voice Note Management
-    func saveVoiceNote(fileName: String, duration: String, levels: [Float], category: String, description: String) {
+    func saveVoiceNote(fileName: String, duration: String, levels: [Float], category: String, description: String) -> VoiceNoteEntity {
         let note = VoiceNoteEntity(context: context)
         note.audioFileName = fileName
         note.durationText = duration
         note.createdAt = Date()
-        note.title = category
-        note.noteDescription = description
+        note.title = category // Category
+        note.noteDescription = description // Title/Name
         
         if let data = try? JSONEncoder().encode(levels) {
             note.waveformData = data
         }
         saveContext()
+        return note 
     }
-
     func fetchAllNotes() -> [VoiceNoteEntity] {
         let request: NSFetchRequest<VoiceNoteEntity> = VoiceNoteEntity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]

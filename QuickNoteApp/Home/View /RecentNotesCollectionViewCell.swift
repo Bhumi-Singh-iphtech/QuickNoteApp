@@ -2,7 +2,7 @@ import UIKit
 
 class RecentNotesCollectionViewCell: UICollectionViewCell {
     
-    // MARK: - Outlets
+    
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
     @IBOutlet weak var titleLabel: UILabel!
@@ -12,31 +12,30 @@ class RecentNotesCollectionViewCell: UICollectionViewCell {
     private let waveformView = WaveformLineView()
     private let playButton = UIButton(type: .system)
 
-    // MARK: - Callbacks
+    
     var onPlayTapped: (() -> Void)?
     var onDeleteTapped: (() -> Void)?
     var onArrowTapped: (() -> Void)?
-    // MARK: - Init
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         contentView.layer.cornerRadius = 14
         
         setupPlayButton()
         setupWaveform()
-        setupLongPressGesture() // Setup Long Press
+        setupLongPressGesture()
         setupArrowGesture()
     }
     private func setupArrowGesture() {
-        // Enable interaction (Images are disabled by default)
+
         arrowImageView.isUserInteractionEnabled = true
         
-        // Add Gesture
+       
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleArrowTap))
         arrowImageView.addGestureRecognizer(tap)
     }
     
     @objc private func handleArrowTap() {
-        // Trigger Callback
         onArrowTapped?()
     }
     private func setupWaveform() {
@@ -45,7 +44,7 @@ class RecentNotesCollectionViewCell: UICollectionViewCell {
         waveformView.backgroundColor = .clear
         contentView.addSubview(waveformView)
         
-        // Prepare constraints
+   
         var constraints = [
             waveformView.leadingAnchor.constraint(equalTo: playButton.trailingAnchor, constant: 8),
             waveformView.centerYAnchor.constraint(equalTo: playButton.centerYAnchor),
@@ -56,7 +55,6 @@ class RecentNotesCollectionViewCell: UICollectionViewCell {
         if let arrow = arrowImageView {
             constraints.append(waveformView.trailingAnchor.constraint(equalTo: arrow.leadingAnchor, constant: -20))
         } else {
-            // Fallback: Pin to the right edge of the cell
             constraints.append(waveformView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12))
         }
         
@@ -65,14 +63,14 @@ class RecentNotesCollectionViewCell: UICollectionViewCell {
     // MARK: - Long Press Logic
     private func setupLongPressGesture() {
         let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
-        longPress.minimumPressDuration = 0.5 // Adjust seconds as needed
+        longPress.minimumPressDuration = 0.5
         self.addGestureRecognizer(longPress)
     }
     
     @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
-        // Only trigger when the gesture begins, otherwise it fires repeatedly
+       
         if gesture.state == .began {
-            // Trigger the callback to the ViewController
+            
             onDeleteTapped?()
         }
     }

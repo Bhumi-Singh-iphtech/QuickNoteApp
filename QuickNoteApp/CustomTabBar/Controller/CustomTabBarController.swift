@@ -29,18 +29,18 @@ class CustomTabBarController: UITabBarController {
 
     }
     @objc private func handleHomeNavigation() {
-        // 1. Switch to Home Tab (Index 0)
+        // Switch to Home Tab (Index 0)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
             
             self.selectedIndex = 0
             
-            // 2. Ensure the custom tab bar is visible (in case it was hidden)
+     
             self.setCustomTabBar(hidden: false)
         }
     }
-        // Don't forget to remove observer when this controller dies
+    
         deinit {
             NotificationCenter.default.removeObserver(self)
         }
@@ -125,7 +125,7 @@ extension CustomTabBarController: UITabBarControllerDelegate {
         return FadeTransitionAnimation()
     }
     
-    // Update custom tab bar when system tab changes (if needed)
+
     override func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
         guard let index = tabBar.items?.firstIndex(of: item) else { return }
         customTabBar.updateSelection(index: index)

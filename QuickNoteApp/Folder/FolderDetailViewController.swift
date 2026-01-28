@@ -53,12 +53,11 @@ class FolderDetailViewController: UIViewController, UIGestureRecognizerDelegate 
         super.viewWillDisappear(animated)
         (tabBarController as? CustomTabBarController)?.setCustomTabBar(hidden: false)
         
-        // Stop audio if playing when leaving folder
+ 
         AudioManager.shared.stop()
     }
     
-    // MARK: - Data Loading Logic
-    // MARK: - Data Loading Logic
+
     private func loadNotesForThisFolder() {
         guard let currentCategory = folderModel?.title else { return }
         
@@ -142,7 +141,7 @@ class FolderDetailViewController: UIViewController, UIGestureRecognizerDelegate 
 
     private func updateSort(title: String) {
         self.sortLabel.text = title
-        // TODO: Implement actual sorting logic for `folderNotes` array here
+       
         self.setupSortMenu()
     }
 
@@ -193,7 +192,7 @@ extension FolderDetailViewController: UICollectionViewDataSource, UICollectionVi
         let item = folderNotes[indexPath.item]
         cell.configure(with: item)
         
-        // 1. Play Button Logic
+        // Play Button Logic
         cell.onPlayTapped = {
             if case .voice(let note) = item {
                 AudioManager.shared.play(note)
@@ -210,7 +209,7 @@ extension FolderDetailViewController: UICollectionViewDataSource, UICollectionVi
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        // Full width minus padding
+    
         return CGSize(width: collectionView.bounds.width - 24, height: 120)
     }
     

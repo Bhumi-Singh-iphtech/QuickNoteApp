@@ -13,6 +13,7 @@ enum AlertMessages {
     enum Title {
         static let deleteNote = "Delete Note"
         static let deleteFolder = "Delete Folder"
+        static let newCategory = "New Category"
         static let saveNote = "Save Note"
         static let addFolder = "Add Folder"
         static let moved = "Moved"
@@ -39,5 +40,6 @@ enum AlertMessages {
         static let cancel = "Cancel"
         static let ok = "OK"
         static let add = "Add"
+        static let other = "Other"
     }
 }

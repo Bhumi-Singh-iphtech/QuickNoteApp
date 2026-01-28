@@ -247,36 +247,41 @@ final class PlainNoteViewController: UIViewController, UIGestureRecognizerDelega
             return
         }
         
-        // Check if we are updating a note (or one created via Share Menu)
+        // 2. Check if we are updating or creating
         if let existingNote = self.currentNote {
-            
-            // OPTION A: Updating Existing Note (or one moved via Menu)
-            print("Updating existing note. Current Folder: \(existingNote.category ?? "Nil")")
+            // UPDATE: Agar note pehle hi ban chuka hai (Menu ke through ya pehle save ke through)
+            print("Updating existing note in category: \(self.selectedCategory)")
             
             existingNote.title = noteTitle
             existingNote.content = noteContent
+            existingNote.category = self.selectedCategory
             existingNote.date = Date()
             
-          
-            
             CoreDataManager.shared.saveContext()
-            
         } else {
+            // CREATE: Agar note bilkul naya hai aur menu bhi use nahi kiya gaya
+            print("Creating new note in category: \(self.selectedCategory)")
             
-        
-            print("Creating new default note (Personal)")
-            
-            CoreDataManager.shared.savePlainNote(
+            // Note: Ensure CoreDataManager returns the created note
+            let newNote = CoreDataManager.shared.savePlainNote(
                 content: noteContent,
                 title: noteTitle,
-                category: self.selectedCategory
+                category: self.selectedCategory //  (defaults to Personal)
             )
+            
+        
+            self.currentNote = newNote
         }
         
         // 3. Notify Home Screen to reload
         NotificationCenter.default.post(name: .refreshHomeNotes, object: nil)
         
-       
+        // Visual Feedback
+//        let toast = UIAlertController(title: AlertMessages.Title.saved, message: nil, preferredStyle: .alert)
+//        present(toast, animated: true)
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+//            toast.dismiss(animated: true)
+//        }
     }
 
     private func navigateBack() {

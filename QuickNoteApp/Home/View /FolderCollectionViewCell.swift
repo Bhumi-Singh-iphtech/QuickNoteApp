@@ -13,7 +13,7 @@ class FolderCollectionViewCell: UICollectionViewCell {
 
    
     var onDeleteRequest: (() -> Void)?
-
+    var onTapRequest: (() -> Void)?
     override func awakeFromNib() {
         super.awakeFromNib()
         
@@ -21,12 +21,16 @@ class FolderCollectionViewCell: UICollectionViewCell {
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.clipsToBounds = true
 
-        // 1. Enable interaction so it can be clicked
+        
         iconImageView.isUserInteractionEnabled = true
         
-        // 2. Add Tap Gesture
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleIconTap))
-        iconImageView.addGestureRecognizer(tap)
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+                longPress.minimumPressDuration = 0.5 // seconds
+                iconImageView.addGestureRecognizer(longPress)
+                
+                // 2. Setup Single Tap (for Navigation)
+                let tap = UITapGestureRecognizer(target: self, action: #selector(handleIconTap))
+                iconImageView.addGestureRecognizer(tap)
 
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -36,13 +40,18 @@ class FolderCollectionViewCell: UICollectionViewCell {
     }
 
     @objc private func handleIconTap() {
-        // 3. Trigger the delete request
-        onDeleteRequest?()
+       
+        onTapRequest?()
     }
-
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+            // Only trigger when the press starts to avoid multiple alerts
+            if gesture.state == .began {
+                onDeleteRequest?()
+            }
+        }
     func configure(with model: FolderModel) {
         titleLabel.text = model.title
-        
+        let symbolName = IconMapper.getSymbolName(for: model.title)
         // Create a Bold configuration
         let boldConfig = UIImage.SymbolConfiguration(weight: .bold)
         

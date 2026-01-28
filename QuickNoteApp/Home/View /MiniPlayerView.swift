@@ -70,7 +70,7 @@ class MiniPlayerView: UIView {
     required init?(coder: NSCoder) { fatalError("init") }
 
     private func setupView() {
-        // Match the dark background from your screenshot
+       
         backgroundColor = UIColor(hex: "#2F2F34" , alpha: 0.8)
         layer.cornerRadius = 20
         layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
