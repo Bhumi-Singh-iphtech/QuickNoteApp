@@ -51,7 +51,7 @@ class FolderCollectionViewCell: UICollectionViewCell {
         }
     func configure(with model: FolderModel) {
         titleLabel.text = model.title
-        let symbolName = IconMapper.getSymbolName(for: model.title)
+   
         // Create a Bold configuration
         let boldConfig = UIImage.SymbolConfiguration(weight: .bold)
         
